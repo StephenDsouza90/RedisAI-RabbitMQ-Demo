@@ -1,0 +1,34 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: A simple file upload API with RabbitMQ and Python worker
+  title: File Upload API
+  version: "1.0"
+paths:
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Accepts a file and sends its name to RabbitMQ
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+      summary: Uploads a file
+      tags:
+      - files
+swagger: "2.0"

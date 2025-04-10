@@ -1,0 +1,45 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672" # management UI
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      -  app-net
+
+  file_upload:
+    build:
+      context: .
+      dockerfile: file_upload/Dockerfile.file_upload
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      -  app-net
+
+  file_process:
+    build:
+      context: .
+      dockerfile: file_process/Dockerfile.file_process
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      -  app-net
+
+networks:
+  app-net:
+    driver: bridge

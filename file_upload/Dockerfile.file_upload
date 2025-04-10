@@ -1,0 +1,6 @@
+FROM golang:1.23-alpine
+WORKDIR /app
+COPY file_upload/ .
+RUN go mod tidy
+RUN go build -o file_upload .
+CMD ["./file_upload"]
