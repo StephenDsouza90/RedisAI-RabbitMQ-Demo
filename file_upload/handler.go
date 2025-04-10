@@ -24,7 +24,7 @@ func NewHandler(rabbitMQ *RabbitMQ) *Handler {
 // @Success 200 {string} string "ok"
 // @Failure 400 {string} string "bad request"
 // @Router /upload [post]
-func (h *Handler) UploadFile(c *gin.Context) {
+func (h *Handler) UploadFile(c *gin.Context, queueName string, filePath string) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No file provided"})
@@ -32,13 +32,13 @@ func (h *Handler) UploadFile(c *gin.Context) {
 	}
 
 	// Save file
-	if err := c.SaveUploadedFile(file, "/data/"+file.Filename); err != nil {
+	if err := c.SaveUploadedFile(file, filePath+"/"+file.Filename); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
 	}
 
 	// Send message to RabbitMQ
-	err = h.rabbitMQ.Publish("file_queue", []byte(file.Filename))
+	err = h.rabbitMQ.Publish(queueName, []byte(file.Filename))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send message to RabbitMQ"})
 		return

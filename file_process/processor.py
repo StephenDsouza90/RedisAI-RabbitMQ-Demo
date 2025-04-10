@@ -6,8 +6,11 @@ class FileProcessor:
     A class to process files. This is a placeholder for the actual file processing logic.
     The process_file method should be implemented to handle the specific file processing needs.
     """
-    @staticmethod
-    def process_file(filename):
+
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def process_file(self, filename):
         """
         Process the file with the given filename.
         This method reads the file, processes it, and saves the result to a new file.
@@ -18,7 +21,7 @@ class FileProcessor:
         Returns:
             None
         """
-        filepath = f"/data/{filename}"
+        filepath = f"/{self.file_path}/{filename}"
         content = pd.read_excel(filepath, engine="openpyxl")
         new_filename = f"processed_{filename}"
-        content.to_excel(f"/data/{new_filename}", index=False)
+        content.to_excel(f"/{self.file_path}/{new_filename}", index=False)

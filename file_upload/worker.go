@@ -7,7 +7,7 @@ type RabbitMQ struct {
 	ch   *amqp.Channel
 }
 
-func NewRabbitMQ(url string) (*RabbitMQ, error) {
+func NewRabbitMQ(url string, queueName string) (*RabbitMQ, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, err
@@ -19,7 +19,7 @@ func NewRabbitMQ(url string) (*RabbitMQ, error) {
 		return nil, err
 	}
 
-	_, err = ch.QueueDeclare("file_queue", false, false, false, false, nil)
+	_, err = ch.QueueDeclare(queueName, false, false, false, false, nil)
 	if err != nil {
 		ch.Close()
 		conn.Close()

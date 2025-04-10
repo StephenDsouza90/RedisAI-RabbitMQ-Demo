@@ -10,12 +10,13 @@ class RabbitMQWorker:
     This worker connects to RabbitMQ, listens for messages on a specified queue,
     and processes the files specified in the messages.
     """
-    def __init__(self, queue_name, host="rabbitmq", port=5672, username="guest", password="guest"):
+    def __init__(self, queue_name, host, port, username, password, file_path):
         self.queue_name = queue_name
         self.host = host
         self.port = port
         self.credentials = pika.PlainCredentials(username=username, password=password)
         self.params = pika.ConnectionParameters(host=self.host, port=self.port, credentials=self.credentials)
+        self.file_path = file_path
         self.connection = None
         self.channel = None
 
@@ -55,8 +56,8 @@ class RabbitMQWorker:
             None
         """
         try:
-            filename = body.decode()
-            FileProcessor.process_file(filename)
+            processor = FileProcessor(self.file_path)
+            processor.process_file(body.decode())
         except Exception as e:
             print(f"Error processing message: {e}")
 

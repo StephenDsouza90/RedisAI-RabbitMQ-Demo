@@ -8,7 +8,7 @@ class HealthCheckAPI:
     A simple health check API using Flask.
     This API provides a single endpoint to check the health of the service.
     """
-    def __init__(self, host="0.0.0.0", port=5000):
+    def __init__(self, host, port):
         self.app = Flask(__name__)
         self.host = host
         self.port = port
