@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	_ "file_upload/docs" // Import the generated docs package
+	_ "interface/docs" // Import the generated docs package
 )
 
 // @title File Upload API

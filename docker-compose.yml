@@ -12,10 +12,10 @@ services:
     networks:
       -  app-net
 
-  file_upload:
+  interface:
     build:
       context: .
-      dockerfile: file_upload/Dockerfile.file_upload
+      dockerfile: interface/Dockerfile.interface
     volumes:
       - ./data:/data
     environment:
