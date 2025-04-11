@@ -30,10 +30,10 @@ services:
     networks:
       -  app-net
 
-  file_process:
+  batch_process:
     build:
       context: .
-      dockerfile: file_process/Dockerfile.file_process
+      dockerfile: batch_process/Dockerfile.batch_process
     ports:
       - "5000:5000"
     volumes:

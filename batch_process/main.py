@@ -1,7 +1,7 @@
 import os
 
-from file_process.worker import RabbitMQWorker
-from file_process.api import HealthCheckAPI
+from batch_process.worker import RabbitMQWorker
+from batch_process.api import HealthCheckAPI
 
 def main():
     try:

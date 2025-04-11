@@ -1,5 +1,0 @@
-FROM python:3.11-slim
-WORKDIR /app
-RUN pip install pika pandas openpyxl flask
-COPY file_process /app/file_process
-CMD ["python", "-m", "file_process.main"]

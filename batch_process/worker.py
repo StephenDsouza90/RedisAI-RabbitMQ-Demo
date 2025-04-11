@@ -1,7 +1,7 @@
 import time
 import pika
 
-from file_process.processor import FileProcessor
+from batch_process.processor import FileProcessor
 
 
 class RabbitMQWorker:
