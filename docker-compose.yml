@@ -12,6 +12,33 @@ services:
     networks:
       -  app-net
 
+  redis:
+    image: "redis:6"
+    ports:
+      - "6379:6379"
+    networks:
+      - app-net
+
+  redisai:
+    image: "redislabs/redisai:latest"
+    platform: linux/amd64
+    ports:
+      - "6380:6379"  # Map host port 6380 → container port 6379
+    networks:
+      - app-net
+
+  inference:
+    build:
+      context: .
+      dockerfile: inference/Dockerfile.inference
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./data:/data
+    command: uvicorn --reload --host 0.0.0.0 --port 5001 --log-level "debug" inference.app:app
+    networks:
+      -  app-net
+
   interface:
     build:
       context: .
@@ -52,6 +79,9 @@ services:
         condition: service_healthy
     networks:
       -  app-net
+
+volumes:
+  redis_data:
 
 networks:
   app-net:
