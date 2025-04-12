@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "ETL: Run",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/etl/main.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Inference: Run",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/inference/app.py",
+            "console": "integratedTerminal"
+        }
+    ]
+}
