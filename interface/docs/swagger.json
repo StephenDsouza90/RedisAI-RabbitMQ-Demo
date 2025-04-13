@@ -46,6 +46,88 @@
                     }
                 }
             }
+        },
+        "/predict": {
+            "post": {
+                "description": "Predicts the price of a car based on its attributes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prediction"
+                ],
+                "summary": "Predict car price",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "description": "Car attributes for price prediction",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "brand": {
+                                    "type": "string"
+                                },
+                                "year": {
+                                    "type": "integer"
+                                },
+                                "engine_size": {
+                                    "type": "number",
+                                    "format": "float"
+                                },
+                                "fuel_type": {
+                                    "type": "string"
+                                },
+                                "transmission": {
+                                    "type": "string"
+                                },
+                                "mileage": {
+                                    "type": "integer"
+                                },
+                                "condition": {
+                                    "type": "string"
+                                },
+                                "model": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "brand",
+                                "year",
+                                "engine_size",
+                                "transmission",
+                                "mileage",
+                                "condition",
+                                "model"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Prediction result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "price": {
+                                    "type": "number",
+                                    "format": "float"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     }
 }

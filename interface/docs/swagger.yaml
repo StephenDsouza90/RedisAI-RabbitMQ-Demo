@@ -9,16 +9,16 @@ paths:
   /upload:
     post:
       consumes:
-      - multipart/form-data
+        - multipart/form-data
       description: Accepts a file and sends its name to RabbitMQ
       parameters:
-      - description: File to upload
-        in: formData
-        name: file
-        required: true
-        type: file
+        - description: File to upload
+          in: formData
+          name: file
+          required: true
+          type: file
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: ok
@@ -30,5 +30,62 @@ paths:
             type: string
       summary: Uploads a file
       tags:
-      - files
+        - files
+  /predict:
+    post:
+      consumes:
+        - application/json
+      description: Predicts the price of a car based on its attributes
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              brand:
+                type: string
+              year:
+                type: integer
+              engine_size:
+                type: number
+                format: float
+              fuel_type:
+                type: string
+              transmission:
+                type: string
+              mileage:
+                type: integer
+              condition:
+                type: string
+              model:
+                type: string
+            required:
+              - brand
+              - year
+              - engine_size
+              - fuel_type
+              - transmission
+              - mileage
+              - condition
+              - model
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Prediction result
+          schema:
+            type: object
+            properties:
+              price:
+                type: number
+                format: float
+        "400":
+          description: Bad request
+          schema:
+            type: string
+      summary: Predicts car price
+      tags:
+        - predictions
+
 swagger: "2.0"

@@ -31,6 +31,9 @@ class Encode:
         # Read the CSV file
         df = pd.read_csv(self.input_csv)
 
+        # Lowercase all column names
+        df.columns = df.columns.str.lower()
+
         # Using OrdinalEncoder for all categorical columns
         categorical_columns = df.select_dtypes(include=['object']).columns
         oe = OrdinalEncoder()

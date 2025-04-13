@@ -52,6 +52,75 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/predict": {
+            "post": {
+                "description": "Accepts a JSON body with car details and predicts the price",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prediction"
+                ],
+                "summary": "Predicts car price",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Car details for price prediction",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "brand": {
+                                    "type": "string"
+                                },
+                                "year": {
+                                    "type": "integer"
+                                },
+                                "engine_size": {
+                                    "type": "number",
+                                    "format": "float"
+                                },
+                                "fuel_type": {
+                                    "type": "string"
+                                },
+                                "transmission": {
+                                    "type": "string"
+                                },
+                                "mileage": {
+                                    "type": "integer"
+                                },
+                                "condition": {
+                                    "type": "string"
+                                },
+                                "model": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["brand", "year", "engine_size", "fuel_type", "transmission", "mileage", "condition", "model"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "number",
+                            "format": "float"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     }
 }`

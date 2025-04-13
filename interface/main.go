@@ -35,6 +35,7 @@ func main() {
 	r.POST("/upload", func(c *gin.Context) {
 		handler.UploadFile(c, queueName, filePath)
 	})
+	r.POST("/predict", handler.Predict)
 	r.GET("/health", handler.HealthCheck)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

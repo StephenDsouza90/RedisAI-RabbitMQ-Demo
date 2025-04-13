@@ -1,12 +1,12 @@
 """
 """
 
+import time
 import joblib
 import redis
+import pickle
 import numpy as np
 import pandas as pd
-import pickle
-import onnx
 from fastapi import FastAPI
 from pydantic import BaseModel
 from redisai import Client
@@ -16,14 +16,14 @@ class PredictionRequest(BaseModel):
     """
     Request model for prediction.
     """
-    Brand: str
-    Year: int
-    Engine_Size: float
-    Fuel_Type: str
-    Transmission: str
-    Mileage: int
-    Condition: str
-    Model: str
+    brand: str
+    year: int
+    engine_size: float
+    fuel_type: str
+    transmission: str
+    mileage: int
+    condition: str
+    model: str
 
 
 class API:
@@ -58,13 +58,13 @@ class API:
 
         # Rename the columns to match the model's input
         df.rename(columns={
-            "Engine_Size": "Engine Size",
-            "Fuel_Type": "Fuel Type"
+            "engine_size": "engine size",
+            "fuel_type": "fuel type"
         }, inplace=True)
 
         # Define the categorical and numerical columns
-        categorical_cols = ['Brand', 'Fuel Type', 'Transmission', 'Condition', 'Model']
-        numerical_cols = ['Year', 'Mileage', 'Engine Size']
+        categorical_cols = ['brand', 'fuel type', 'transmission', 'condition', 'model']
+        numerical_cols = ['year', 'mileage', 'engine size']
 
         # Ensure the categorical columns are of type 'category'
         encoded_data = self.encoder.transform(df[categorical_cols])
@@ -88,6 +88,8 @@ class API:
         async def predict_with_pkl(data: PredictionRequest) -> dict: 
             """
             """
+            start = time.time()
+
             model_with_pkl = "model_with_pkl"
 
             model_data = self.r.get(model_with_pkl)
@@ -100,12 +102,21 @@ class API:
 
             input_data = self._get_input_data(data)
             output = model.predict(input_data)
+
+            end = time.time()
+
+            time_taken = end - start
+
+            print(f"time taken: {time_taken}")
+
             return {"predicted_price": output.tolist()}
 
         @self.app.post("/predict/joblib")
         async def predict_with_joblib(data: PredictionRequest) -> dict:
             """
             """
+            start = time.time()
+
             model_with_joblib = "model_with_joblib"
 
             model_data = self.r.get(model_with_joblib)
@@ -118,12 +129,23 @@ class API:
             
             input_data = self._get_input_data(data)
             output = model.predict(input_data)
+
+            end = time.time()
+
+            time_taken = end - start
+
+            print(f"time taken: {time_taken}")
+
             return {"predicted_price": output.tolist()}
 
         @self.app.post("/predict/onnx")
         async def predict_with_onnx(data: PredictionRequest) -> dict:
             """
             """
+            print("Predicting with ONNX model...")
+
+            start = time.time()
+
             model_with_onnx = "model_with_onnx"
 
             if not self.rai.exists(model_with_onnx):
@@ -145,5 +167,11 @@ class API:
             self.rai.tensorset("input_tensor", input_data)
             self.rai.modelexecute(model_with_onnx, inputs=["input_tensor"], outputs=["output_tensor"])
             output = self.rai.tensorget("output_tensor")
+
+            end = time.time()
+
+            time_taken = end - start
+
+            print(f"time taken: {time_taken}")
 
             return {"predicted_price": float(output[0][0])}
