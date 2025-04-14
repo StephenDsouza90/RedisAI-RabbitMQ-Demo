@@ -1,27 +1,34 @@
+from const import Columns
 from encode import Encode
 from train import Train
 
 
 def main():
+    x_cols = Columns.X
+    y_cols = [Columns.TARGET]
 
-    # NOTE: Testing IT data with only 3 model groups
+    pre_fix = "ml/data/"
 
-    x_cols = ["model", "kilometers", "fueltype", "geartype", "vehicletype", "ageinmonths", "color", "line", "doors", "seats", "climate"]
-    y_cols = ["priceinlocalcurrency"]
-
-    model_groups = [("A.csv", "180")]
-    for model_group, model in model_groups:
+    for model_group in ["A.csv", "B.csv", "C.csv"]:
         print(f"Processing model group: {model_group}")
 
-        transformed_data_path = model_group # csv path
-        encoded_data_path = f"encoded_{model_group}" # csv path
-        ordinal_encoder_path = f"ordinal_encoder_{model_group}".replace(".csv", ".pkl") # pkl path
+        transformed_data_path = f"{pre_fix}{model_group}"  # csv path
+        encoded_data_path = f"{pre_fix}encoded_{model_group}"  # csv path
+        ordinal_encoder_path = f"{pre_fix}ordinal_encoder_{model_group}".replace(
+            ".csv", ".pkl"
+        )  # pkl path
 
         # Initialize the Encode class and run the encoding process
-        Encode().run(x_cols, y_cols, transformed_data_path, encoded_data_path, ordinal_encoder_path, model)
+        Encode().run(
+            x_cols,
+            y_cols,
+            transformed_data_path,
+            encoded_data_path,
+            ordinal_encoder_path,
+        )
 
-        onnx_path = f"model_{model_group}".replace(".csv", ".onnx")
-        pkl_path = f"model_{model_group}".replace(".csv", ".pkl")
+        onnx_path = f"{pre_fix}model_{model_group}".replace(".csv", ".onnx")
+        pkl_path = f"{pre_fix}model_{model_group}".replace(".csv", ".pkl")
 
         # Initialize the Train class and run the training process
         Train().run(encoded_data_path, x_cols, y_cols, onnx_path, pkl_path)
