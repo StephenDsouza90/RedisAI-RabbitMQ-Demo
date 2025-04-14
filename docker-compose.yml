@@ -1,16 +1,16 @@
 services:
-  rabbitmq:
-    image: rabbitmq:3-management
-    ports:
-      - "5672:5672"
-      - "15672:15672" # management UI
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      -  app-net
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672" # management UI
+  #   healthcheck:
+  #     test: ["CMD", "rabbitmqctl", "status"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   networks:
+  #     -  app-net
 
   redis:
     image: "redis:6"
@@ -18,6 +18,11 @@ services:
       - "6379:6379"
     networks:
       - app-net
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
 
   redisai:
     image: "redislabs/redisai:latest"
@@ -26,59 +31,64 @@ services:
       - "6380:6379"  # Map host port 6380 → container port 6379
     networks:
       - app-net
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
 
-  inference:
+  ml-inference:
     build:
       context: .
-      dockerfile: inference/Dockerfile.inference
+      dockerfile: ml/inference/Dockerfile.inference
     ports:
       - "5001:5001"
     volumes:
       - ./data:/data
-    command: uvicorn --reload --host 0.0.0.0 --port 5001 --log-level "debug" inference.app:app
+    command: uvicorn --reload --host 0.0.0.0 --port 5001 --log-level "debug" ml.inference.app:app
     networks:
       -  app-net
 
-  interface:
-    build:
-      context: .
-      dockerfile: interface/Dockerfile.interface
-    volumes:
-      - ./data:/data
-    environment:
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
-      RABBITMQ_QUEUE: file_queue
-      FILE_PATH: /data
-    ports:
-      - "8080:8080"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      -  app-net
+  # interface:
+  #   build:
+  #     context: .
+  #     dockerfile: interface/Dockerfile.interface
+  #   volumes:
+  #     - ./data:/data
+  #   environment:
+  #     RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+  #     RABBITMQ_QUEUE: file_queue
+  #     FILE_PATH: /data
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   networks:
+  #     -  app-net
 
-  batch_process:
-    build:
-      context: .
-      dockerfile: batch_process/Dockerfile.batch_process
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./data:/data
-    environment:
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASSWORD: guest
-      RABBITMQ_QUEUE: file_queue
-      API_HOST: 0.0.0.0
-      API_PORT: 5000
-      FILE_PATH: /data
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      -  app-net
+  # batch_process:
+  #   build:
+  #     context: .
+  #     dockerfile: batch_process/Dockerfile.batch_process
+  #   ports:
+  #     - "5000:5000"
+  #   volumes:
+  #     - ./data:/data
+  #   environment:
+  #     RABBITMQ_HOST: rabbitmq
+  #     RABBITMQ_PORT: 5672
+  #     RABBITMQ_USER: guest
+  #     RABBITMQ_PASSWORD: guest
+  #     RABBITMQ_QUEUE: file_queue
+  #     API_HOST: 0.0.0.0
+  #     API_PORT: 5000
+  #     FILE_PATH: /data
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   networks:
+  #     -  app-net
 
 volumes:
   redis_data:

@@ -4,7 +4,7 @@
             "name": "ETL: Run",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/etl/main.py",
+            "program": "${workspaceFolder}/ml/etl/main.py",
             "console": "integratedTerminal"
         },
         {

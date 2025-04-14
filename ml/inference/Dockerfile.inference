@@ -3,10 +3,10 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Copy application files
-COPY inference /app/inference
+COPY ml/inference /app/ml/inference
 
 # Install Python packages and dependencies
 RUN pip3 install redis fastapi uvicorn pandas scikit-learn setuptools redisai onnx
 
 # Use better process manager for production
-CMD ["uvicorn", "--host", "0.0.0.0", "--port", "5001", "--reload", "inference.app:app"]
+CMD ["uvicorn", "--host", "0.0.0.0", "--port", "5001", "--reload", "ml.inference.app:app"]

@@ -89,7 +89,7 @@ func (h *Handler) Predict(c *gin.Context) {
 
 	fmt.Println("Sending request to Python worker with body:", string(jsonBody))
 
-	resp, err := http.Post("http://inference:5001/predict/onnx", "application/json", bytes.NewReader(jsonBody))
+	resp, err := http.Post("http://ml-inference:5001/predict/onnx", "application/json", bytes.NewReader(jsonBody))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send request to Python worker"})
 		return
