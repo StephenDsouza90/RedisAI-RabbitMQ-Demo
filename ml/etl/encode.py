@@ -35,9 +35,7 @@ class Encode:
             Tuple[pd.DataFrame, OrdinalEncoder]: A tuple containing the encoded DataFrame
             and the fitted OrdinalEncoder.
         """
-        df = pd.read_csv(
-            transformed_data_path, encoding="utf-8", low_memory=False
-        )
+        df = pd.read_csv(transformed_data_path, encoding="utf-8", low_memory=False)
 
         # Select only relevant columns from the DataFrame
         x_y_cols = x_cols + y_cols
