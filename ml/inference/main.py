@@ -4,16 +4,24 @@ This module sets up the FastAPI application, defines the API routes,
 and handles the model inference logic.
 """
 
+import warnings
 import pickle
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI
 from sklearn.preprocessing import OrdinalEncoder
+from ratelimit import limits, sleep_and_retry
 
 from ml.inference.const import ModelInferenceRequest
 from ml.inference.decorator import time_checker
 from ml.inference.redis_ai_client import RedisAIClient
 from ml.inference.redis_client import RedisClient
+
+
+warnings.filterwarnings(
+    "ignore",
+    message="X does not have valid feature names, but RandomForestRegressor was fitted with feature names",
+)
 
 
 class API:
@@ -34,6 +42,9 @@ class API:
         self.cat_cols = cat_cols
         self.num_cols = num_cols
         self._setup_routes()
+        self.rai.set_model(key="model_A", path="model_A", ext=".onnx")
+        self.rai.set_model(key="model_B", path="model_B", ext=".onnx")
+        self.rai.set_model(key="model_C", path="model_C", ext=".onnx")
 
     def _load_encoder(self, model_group: str) -> OrdinalEncoder:
         """
@@ -91,6 +102,8 @@ class API:
         Setup the FastAPI routes.
         """
 
+        @sleep_and_retry
+        @limits(calls=20, period=1)  # 20 requests per second
         @self.app.post("/predict/onnx")
         @time_checker
         async def predict_onnx(data: ModelInferenceRequest) -> dict:
@@ -105,10 +118,6 @@ class API:
 
             # Key for the model in Redis
             key = f"model_{model_group}"
-
-            # Check if the model is already loaded in RedisAI
-            # If not, load it from the file
-            self.rai.set_model(key=key, path=key, ext=".onnx")
 
             input_data = self._get_input_data(
                 data, model_group, self.cat_cols, self.num_cols

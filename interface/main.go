@@ -39,5 +39,6 @@ func main() {
 	r.GET("/health", handler.HealthCheck)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// Start the server
 	r.Run(":8080")
 }

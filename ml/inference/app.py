@@ -40,5 +40,6 @@ if rai.ping():
 else:
     raise ConnectionError("RedisAI server is not reachable.")
 
+print("Starting API...")
 backend = API(redis=r, redis_ai=rai, cat_cols=cat_cols, num_cols=num_cols)
 app = backend.app

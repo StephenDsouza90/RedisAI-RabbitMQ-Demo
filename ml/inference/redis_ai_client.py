@@ -5,6 +5,7 @@ It includes methods for setting models, executing them, and handling tensors.
 
 from typing import Union
 
+import redis
 import numpy as np
 from redisai import Client
 
@@ -14,14 +15,17 @@ class RedisAIClient:
     A client for interacting with RedisAI.
     """
 
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, max_connections=10):
         """
         Initialize the RedisAIClient.
         Args:
             host (str): The RedisAI client host.
             port (int): The RedisAI client port.
         """
-        self.client = Client(host=host, port=port)
+        self.pool = redis.ConnectionPool(
+            host=host, port=port, max_connections=max_connections
+        )
+        self.client = Client(connection_pool=self.pool)
 
     def ping(self):
         """

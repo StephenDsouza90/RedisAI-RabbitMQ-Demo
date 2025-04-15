@@ -6,6 +6,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/ml/etl/main.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Batch: Run",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/batch/processor.py",
+            "console": "integratedTerminal",
         }
     ]
 }

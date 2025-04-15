@@ -6,7 +6,7 @@ WORKDIR /app
 COPY ml/inference /app/ml/inference
 
 # Install Python packages and dependencies
-RUN pip3 install redis fastapi uvicorn pandas scikit-learn setuptools redisai onnx
+RUN pip3 install redis fastapi uvicorn pandas scikit-learn setuptools redisai onnx ratelimit
 
 # Use better process manager for production
 CMD ["uvicorn", "--host", "0.0.0.0", "--port", "5001", "--reload", "ml.inference.app:app"]

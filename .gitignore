@@ -177,3 +177,5 @@ cython_debug/
 *.joblib
 *.pkl
 *.onnx
+*.xlsx
+.DS_Store
