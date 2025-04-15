@@ -6,13 +6,6 @@
             "request": "launch",
             "program": "${workspaceFolder}/ml/etl/main.py",
             "console": "integratedTerminal"
-        },
-        {
-            "name": "Inference: Run",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/inference/app.py",
-            "console": "integratedTerminal"
         }
     ]
 }

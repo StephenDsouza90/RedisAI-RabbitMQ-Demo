@@ -14,10 +14,8 @@ class FileProcessor:
         """
         Process the file with the given filename.
         This method reads the file, processes it, and saves the result to a new file.
-
         Args:
             filename (str): The name of the file to process.
-        
         Returns:
             None
         """

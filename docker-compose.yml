@@ -43,8 +43,13 @@ services:
       dockerfile: ml/inference/Dockerfile.inference
     ports:
       - "5001:5001"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDISAI_HOST: redisai
+      REDISAI_PORT: 6379
     volumes:
-      - ./data:/data
+      - ./ml/data:/ml/data
     command: uvicorn --reload --host 0.0.0.0 --port 5001 --log-level "debug" ml.inference.app:app
     networks:
       -  app-net

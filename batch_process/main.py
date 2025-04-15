@@ -3,6 +3,7 @@ import os
 from batch_process.worker import RabbitMQWorker
 from batch_process.api import HealthCheckAPI
 
+
 def main():
     try:
         # Load environment variables for the API
@@ -27,7 +28,6 @@ def main():
         worker.start_consuming()
     except Exception as e:
         print(f"An error occurred: {e}")
-
 
 
 if __name__ == "__main__":

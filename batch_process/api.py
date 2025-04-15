@@ -8,6 +8,7 @@ class HealthCheckAPI:
     A simple health check API using Flask.
     This API provides a single endpoint to check the health of the service.
     """
+
     def __init__(self, host, port):
         self.app = Flask(__name__)
         self.host = host
@@ -19,6 +20,7 @@ class HealthCheckAPI:
         Set up the health check route.
         This route returns a JSON response indicating the health status of the service.
         """
+
         @self.app.route("/health", methods=["GET"])
         def health_check():
             return jsonify({"status": "healthy"}), 200
@@ -30,7 +32,11 @@ class HealthCheckAPI:
         """
         threading.Thread(
             target=self.app.run,
-            kwargs={"host": self.host, "port": self.port, "debug": False, "use_reloader": False},
-            daemon=True
+            kwargs={
+                "host": self.host,
+                "port": self.port,
+                "debug": False,
+                "use_reloader": False,
+            },
+            daemon=True,
         ).start()
-

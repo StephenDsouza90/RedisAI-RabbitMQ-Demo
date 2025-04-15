@@ -10,12 +10,15 @@ class RabbitMQWorker:
     This worker connects to RabbitMQ, listens for messages on a specified queue,
     and processes the files specified in the messages.
     """
+
     def __init__(self, queue_name, host, port, username, password, file_path):
         self.queue_name = queue_name
         self.host = host
         self.port = port
         self.credentials = pika.PlainCredentials(username=username, password=password)
-        self.params = pika.ConnectionParameters(host=self.host, port=self.port, credentials=self.credentials)
+        self.params = pika.ConnectionParameters(
+            host=self.host, port=self.port, credentials=self.credentials
+        )
         self.file_path = file_path
         self.connection = None
         self.channel = None
@@ -42,7 +45,7 @@ class RabbitMQWorker:
         Callback function to process messages from the RabbitMQ queue.
         This function is called whenever a new message is received on the queue.
         It decodes the message body and calls the FileProcessor to process the file.
-        
+
         Args:
             ch: The channel object.
             method: The method frame.
@@ -51,7 +54,7 @@ class RabbitMQWorker:
 
         Raises:
             Exception: If there is an error processing the message.
-        
+
         Returns:
             None
         """
@@ -67,7 +70,7 @@ class RabbitMQWorker:
         This method sets up the callback function and starts the message loop.
         It will run indefinitely until the connection is closed.
         """
-        self.channel.basic_consume(queue=self.queue_name, on_message_callback=self.callback, auto_ack=True)
+        self.channel.basic_consume(
+            queue=self.queue_name, on_message_callback=self.callback, auto_ack=True
+        )
         self.channel.start_consuming()
-
-
