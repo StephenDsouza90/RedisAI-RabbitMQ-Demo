@@ -1,3 +1,9 @@
+"""
+RabbitMQ Worker for File Processing
+This module defines a RabbitMQWorker class that connects to a RabbitMQ server,
+consumes messages from a specified queue, and processes files based on the received messages.
+"""
+
 import time
 import json
 
@@ -9,8 +15,9 @@ from processor import FileProcessor
 class RabbitMQWorker:
     """
     A worker that consumes messages from a RabbitMQ queue and processes files.
+
     This worker connects to RabbitMQ, listens for messages on a specified queue,
-    and processes the files specified in the messages.
+    and processes the files specified in the messages using the FileProcessor.
     """
 
     def __init__(
@@ -24,11 +31,24 @@ class RabbitMQWorker:
         ml_host: str,
         ml_port: int,
     ):
+        """
+        Initialize the RabbitMQWorker with connection and processing details.
+
+        Args:
+            queue_name (str): Name of the RabbitMQ queue to consume messages from.
+            host (str): RabbitMQ server hostname or IP address.
+            port (int): RabbitMQ server port.
+            username (str): Username for RabbitMQ authentication.
+            password (str): Password for RabbitMQ authentication.
+            file_path (str): Path to the directory where files are stored.
+            ml_host (str): Hostname or IP address of the ML service.
+            ml_port (int): Port of the ML service.
+        """
         self.queue_name = queue_name
         self.host = host
         self.port = port
         self.credentials = pika.PlainCredentials(username, password)
-        self.params = pika.ConnectionParameters(
+        self.connection_params = pika.ConnectionParameters(
             host=self.host, port=self.port, credentials=self.credentials
         )
         self.file_path = file_path
@@ -37,73 +57,84 @@ class RabbitMQWorker:
         self.ml_host = ml_host
         self.ml_port = ml_port
 
-    def connect(self):
+    def connect(self, max_retries: int = 2):
         """
         Establish a connection to RabbitMQ and declare the queue.
+
         This method attempts to connect to RabbitMQ and declare the queue.
         If the connection fails, it retries a few times before raising an exception.
+
+        Raises:
+            Exception: If the connection to RabbitMQ fails after retries.
         """
-        for _ in range(2):
+        for attempt in range(max_retries):
             try:
-                self.connection = pika.BlockingConnection(self.params)
+                self.connection = pika.BlockingConnection(self.connection_params)
                 self.channel = self.connection.channel()
                 self.channel.queue_declare(queue=self.queue_name)
                 print(f"Connected to RabbitMQ and declared queue: {self.queue_name}")
                 return
             except pika.exceptions.AMQPConnectionError:
-                print("Retrying connection to RabbitMQ...")
+                print(f"Connection attempt {attempt + 1} failed. Retrying...")
                 time.sleep(2)
-        raise Exception("Failed to connect to RabbitMQ after retries")
+        raise Exception("Failed to connect to RabbitMQ after multiple retries")
 
-    def callback(self, ch, method, properties, body):
+    def _process_message(self, channel, method, body):
         """
-        Callback function to process messages from the RabbitMQ queue.
-        This function is called whenever a new message is received on the queue.
-        It decodes the message body and calls the FileProcessor to process the file.
+        Process a single message from the RabbitMQ queue.
+
         Args:
-            ch: The channel object.
-            method: The method frame.
-            properties: The properties of the message.
+            channel: The channel object.
+            method: The method frame containing delivery information.
             body: The body of the message (file name).
+
         Raises:
             Exception: If there is an error processing the message.
-        Returns:
-            None
         """
         try:
             filename = body.decode()
             if not filename:
                 print("Invalid message format: 'filename' missing")
-                if ch.is_open:
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
                 return
 
-            print(f"Received message for file: {filename}")
-
+            print(f"Processing file: {filename}")
             processor = FileProcessor(self.file_path, self.ml_host, self.ml_port)
             processor.process_file(filename)
-            if ch.is_open:
-                ch.basic_ack(delivery_tag=method.delivery_tag)
 
         except json.JSONDecodeError:
-            print("Failed to decode message")
-            if ch.is_open:
-                ch.basic_ack(delivery_tag=method.delivery_tag)
-
+            print("Failed to decode message body as JSON")
         except Exception as e:
-            print(f"Error processing message: {str(e)}")
-            if ch.is_open:
-                ch.basic_ack(delivery_tag=method.delivery_tag)
+            print(f"Error processing file: {str(e)}")
+        finally:
+            if channel.is_open:
+                channel.basic_ack(delivery_tag=method.delivery_tag)
+
+    def _message_callback(self, channel, method, properties, body):
+        """
+        Callback function to handle messages from the RabbitMQ queue.
+
+        Args:
+            channel: The channel object.
+            method: The method frame containing delivery information.
+            properties: The properties of the message.
+            body: The body of the message (file name).
+        """
+        print(f"Received message: {body}")
+        self._process_message(channel, method, body)
 
     def start_consuming(self):
         """
         Start consuming messages from the RabbitMQ queue.
+
         This method sets up the callback function and starts the message loop.
         It will run indefinitely until the connection is closed.
         """
+        if not self.channel:
+            raise Exception("RabbitMQ channel is not initialized. Call 'connect' first.")
+
         self.channel.basic_qos(prefetch_count=1)
         self.channel.basic_consume(
-            queue=self.queue_name, on_message_callback=self.callback, auto_ack=False
+            queue=self.queue_name, on_message_callback=self._message_callback, auto_ack=False
         )
         print(" [*] Waiting for messages. To exit press CTRL+C")
         self.channel.start_consuming()

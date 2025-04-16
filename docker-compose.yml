@@ -78,8 +78,6 @@ services:
       dockerfile: batch/Dockerfile.batch
     ports:
       - "5000:5000"
-    volumes:
-      - ./data:/data
     environment:
       PYTHONUNBUFFERED: 1
       RABBITMQ_HOST: rabbitmq
@@ -90,6 +88,9 @@ services:
       ML_HOST: ml
       ML_PORT: 5001
       FILE_PATH: /data
+    volumes:
+      - ./data:/data
+    command: python -u batch/main.py # -u flag to force stdout and stderr streams to be unbuffered
     depends_on:
       rabbitmq:
         condition: service_healthy

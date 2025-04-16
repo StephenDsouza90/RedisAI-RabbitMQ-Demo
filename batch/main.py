@@ -3,7 +3,7 @@ import os
 from worker import RabbitMQWorker
 
 
-def app():
+def main():
     # Load environment variables for RabbitMQ
     host = os.getenv("RABBITMQ_HOST")
     port = os.getenv("RABBITMQ_PORT")
@@ -26,4 +26,4 @@ def app():
 
 if __name__ == "__main__":
     print("Starting the application...")
-    app()
+    main()
