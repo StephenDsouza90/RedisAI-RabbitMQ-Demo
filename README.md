@@ -63,14 +63,14 @@ TODO
 
 ## Quick Start with Docker Compose (Locally)
 
-1. Clone the repository:
+1. **Clone the repository:**
 
 ```git
 git clone https://github.com/StephenDsouza90/RedisAI-RabbitMQ-Demo.git
 cd RedisAI-RabbitMQ-Demo
 ```
 
-2. Run ETL Pipeline to create models
+2. **Run ETL Pipeline to create models:**
 
 ```python
 # Install packages and dependencies
@@ -80,7 +80,7 @@ pip install -r requirements.txt
 python ml/etl/main.py
 ```
 
-3. Start all services:
+3. **Start all services:**
 
 ```docker
 # Start Services
@@ -101,7 +101,7 @@ eb375fe54484   redis:6                           "docker-entrypoint.s…"   9 mi
 b1a6a1459143   redislabs/redisai:latest          "docker-entrypoint.s…"   9 minutes ago        Up 9 minutes (healthy)   0.0.0.0:6380->6379/tcp                                                                                        redisai-rabbitmq-demo-redisai-1
 ```
 
-4. Use Interface Service
+4. **Use Interface Service:**
 
 Upload files (Test files are available)
 
@@ -139,13 +139,13 @@ Output
 {"predicted_price":32424.388671875}
 ```
 
-5. Check RabbitMQ (If needed)
+5. **Check RabbitMQ (If needed):**
 
 ```
 http://localhost:15672
 ```
 
-6. Use ML Inference directly
+6. **Use ML Inference directly:**
 
 ```
 # Use swagger UI
@@ -168,7 +168,8 @@ http://localhost:5001/docs
 }
 ```
 
-7. Stop services
+7. **Stop services:**
+
 ```
 # ...
 docker-compose down
