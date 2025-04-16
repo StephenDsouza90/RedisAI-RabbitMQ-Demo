@@ -50,7 +50,7 @@ class RedisAIClient:
             model_path (str): The relative path to the model file.
             file_extension (str): The file extension of the model file (e.g., '.onnx').
         """
-        model_directory = "/ml/data/"
+        model_directory = "/ml/data/models/"
 
         if not self.client.exists(model_key):
             full_model_path = f"{model_directory}{model_path}{file_extension}"

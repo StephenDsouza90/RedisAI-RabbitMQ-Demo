@@ -52,7 +52,7 @@ class RedisClient:
         Returns:
             Any: The deserialized object that was stored.
         """
-        file_path = f"/ml/data/{key}{file_extension}"
+        file_path = f"/ml/data/encoder/{key}{file_extension}"
 
         with open(file_path, "rb") as file:
             obj = pickle.load(file)
