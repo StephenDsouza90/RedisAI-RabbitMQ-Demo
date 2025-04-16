@@ -2,20 +2,33 @@ import time
 from functools import wraps
 
 
-def time_checker(f):
+def measure_execution_time(func):
     """
-    Decorator to check the time taken by the function.
+    Asynchronous decorator to measure and log the execution time of a function.
+
+    Args:
+        func (Callable): The asynchronous function to be wrapped.
+
+    Returns:
+        Callable: The wrapped function with execution time measurement.
     """
 
-    @wraps(f)
+    @wraps(func)
     async def wrapper(*args, **kwargs):
         """
-        Wrapper function to check the time taken by the function.
+        Wrapper function that measures and logs the execution time of the decorated function.
+
+        Args:
+            *args: Positional arguments for the decorated function.
+            **kwargs: Keyword arguments for the decorated function.
+
+        Returns:
+            Any: The result of the decorated function.
         """
-        start = time.time()
-        result = await f(*args, **kwargs)
-        end = time.time()
-        print(f"Time taken: {end - start} seconds")
+        start_time = time.time()
+        result = await func(*args, **kwargs)
+        elapsed_time = time.time() - start_time
+        print(f"Execution time: {elapsed_time:.4f} seconds")
         return result
 
     return wrapper

@@ -3,8 +3,6 @@ This module provides a client for interacting with RedisAI, a Redis module for e
 It includes methods for setting models, executing them, and handling tensors.
 """
 
-from typing import Union
-
 import redis
 import numpy as np
 from redisai import Client
@@ -12,64 +10,99 @@ from redisai import Client
 
 class RedisAIClient:
     """
-    A client for interacting with RedisAI.
+    A client for interacting with RedisAI to manage models and tensors.
     """
 
-    def __init__(self, host: str, port: int, max_connections=10):
+    def __init__(self, host: str, port: int, max_connections: int = 10):
         """
-        Initialize the RedisAIClient.
+        Initialize the RedisAIClient with connection details.
+
         Args:
-            host (str): The RedisAI client host.
-            port (int): The RedisAI client port.
+            host (str): The RedisAI server host.
+            port (int): The RedisAI server port.
+            max_connections (int): Maximum number of connections in the pool. Default is 10.
         """
-        self.pool = redis.ConnectionPool(
+        self.connection_pool = redis.ConnectionPool(
             host=host, port=port, max_connections=max_connections
         )
-        self.client = Client(connection_pool=self.pool)
+        self.client = Client(connection_pool=self.connection_pool)
 
-    def ping(self):
+    def is_server_alive(self) -> bool:
         """
-        Ping the RedisAI server to check if it is alive.
+        Check if the RedisAI server is reachable.
+
+        Returns:
+            bool: True if the server is reachable, False otherwise.
         """
         try:
             self.client.ping()
             return True
-        except Exception as e:
-            print(f"RedisAI ping failed: {e}")
+        except Exception as error:
+            print(f"RedisAI ping failed: {error}")
             return False
 
-    def set_model(self, key: str, path: str, ext: str):
+    def set_model(self, model_key: str, model_path: str, file_extension: str) -> None:
         """
-        Set the model in RedisAI.
-        Args:
-            key (str): The key to store the model under.
-            path (str): The path to the model file.
-            ext (str): The file extension of the model file.
-        """
-        pre_fix = "/ml/data/"
+        Upload a model to RedisAI.
 
-        if not self.client.exists(key):
-            with open(f"{pre_fix}{path}{ext}", "rb") as f:
-                model_bytes = f.read()
+        Args:
+            model_key (str): The key under which the model will be stored.
+            model_path (str): The relative path to the model file.
+            file_extension (str): The file extension of the model file (e.g., '.onnx').
+        """
+        model_directory = "/ml/data/"
+
+        if not self.client.exists(model_key):
+            full_model_path = f"{model_directory}{model_path}{file_extension}"
+            with open(full_model_path, "rb") as model_file:
+                model_data = model_file.read()
 
             self.client.modelset(
-                key=key,
+                key=model_key,
                 backend="ONNX",
                 device="cpu",
-                data=model_bytes,
+                data=model_data,
                 inputs=["float_input"],
                 outputs=["variable"],
             )
 
-    def tensor_set(self, key: str, input_data: np.ndarray) -> Union[dict, np.ndarray]:
+    def execute_model(
+        self, model_key: str, input_tensor_key: str, output_tensor_key: str
+    ) -> np.ndarray:
         """
-        Set the tensor in RedisAI.
+        Execute a model stored in RedisAI with the given input tensor.
+
         Args:
-            key (str): The key to store the tensor under.
-            input_data (np.ndarray): The input data to set as a tensor.
+            model_key (str): The key of the model to execute.
+            input_tensor_key (str): The key of the input tensor.
+            output_tensor_key (str): The key where the output tensor will be stored.
+
+        Returns:
+            np.ndarray: The output tensor retrieved from RedisAI.
         """
-        self.client.tensorset("input_tensor", input_data)
         self.client.modelexecute(
-            key, inputs=["input_tensor"], outputs=["output_tensor"]
+            model_key, inputs=[input_tensor_key], outputs=[output_tensor_key]
         )
-        return self.client.tensorget("output_tensor")
+        return self.client.tensorget(output_tensor_key)
+
+    def set_tensor(self, tensor_key: str, tensor_data: np.ndarray) -> None:
+        """
+        Store a tensor in RedisAI.
+
+        Args:
+            tensor_key (str): The key under which the tensor will be stored.
+            tensor_data (np.ndarray): The tensor data to store.
+        """
+        self.client.tensorset(tensor_key, tensor_data)
+
+    def get_tensor(self, tensor_key: str) -> np.ndarray:
+        """
+        Retrieve a tensor from RedisAI.
+
+        Args:
+            tensor_key (str): The key of the tensor to retrieve.
+
+        Returns:
+            np.ndarray: The retrieved tensor data.
+        """
+        return self.client.tensorget(tensor_key)

@@ -1,155 +1,109 @@
-"""
-Main module for the FastAPI application to handle model inference requests.
-This module sets up the FastAPI application, defines the API routes,
-and handles the model inference logic.
-"""
+import os
 
-import warnings
-import pickle
-import numpy as np
-import pandas as pd
-from fastapi import FastAPI
-from sklearn.preprocessing import OrdinalEncoder
-from ratelimit import limits, sleep_and_retry
-
-from ml.inference.const import ModelInferenceRequest
-from ml.inference.decorator import time_checker
+from ml.inference.app import InferenceAPI
+from ml.inference.const import (
+    CategoricalColumns,
+    NumericalColumns,
+    Columns,
+    ModelInferenceRequest,
+)
 from ml.inference.redis_ai_client import RedisAIClient
 from ml.inference.redis_client import RedisClient
 
 
-warnings.filterwarnings(
-    "ignore",
-    message="X does not have valid feature names, but RandomForestRegressor was fitted with feature names",
-)
-
-
-class API:
+def validate_column_configuration():
     """
-    API class to handle the FastAPI application and prediction requests.
+    Validates that the total number of columns matches the sum of categorical and numerical columns.
+    Raises:
+        ValueError: If the column configuration is invalid.
     """
+    categorical_columns = CategoricalColumns().to_list()
+    numerical_columns = NumericalColumns().to_list()
 
-    def __init__(
-        self,
-        redis: RedisClient,
-        redis_ai: RedisAIClient,
-        cat_cols: list,
-        num_cols: list,
-    ):
-        self.app = FastAPI()
-        self.r = redis
-        self.rai = redis_ai
-        self.cat_cols = cat_cols
-        self.num_cols = num_cols
-        self._setup_routes()
-        self.rai.set_model(key="model_A", path="model_A", ext=".onnx")
-        self.rai.set_model(key="model_B", path="model_B", ext=".onnx")
-        self.rai.set_model(key="model_C", path="model_C", ext=".onnx")
+    if len(Columns.X) != len(categorical_columns) + len(numerical_columns):
+        raise ValueError(
+            "The total columns must equal the sum of categorical and numerical columns."
+        )
 
-    def _load_encoder(self, model_group: str) -> OrdinalEncoder:
-        """
-        Load the OrdinalEncoder from the specified path and model group.
-        Args:
-            model_group (str): The model group to load the encoder for.
-        Returns:
-            encoder (OrdinalEncoder): The loaded OrdinalEncoder.
-        """
-        key = f"ordinal_encoder_{model_group}"
+    return categorical_columns, numerical_columns
 
-        encoder = self.r.get_encoder(key)
-        if not encoder:
-            encoder = self.r.set_encoder(key=key, ext=".pkl")
 
-        return encoder
+def validate_model_request():
+    """
+    Validates the keys in the model inference request.
+    Raises:
+        ValueError: If the keys are invalid.
+    """
+    ModelInferenceRequest().validate_keys()
 
-    def _get_input_data(
-        self,
-        data: ModelInferenceRequest,
-        model_group: str,
-        cat_cols: list,
-        num_cols: list,
-    ) -> np.ndarray:
-        """
-        Convert the input data to a NumPy array suitable for prediction.
-        Args:
-            data (ModelInferenceRequest): The input data for prediction.
-            model_group (str): The model group to use for encoding.
-            cat_cols (list): List of categorical columns.
-            num_cols (list): List of numerical columns.
-        Returns:
-            input_data (np.ndarray): The input data as a NumPy array.
-        """
-        # Convert the input data to a DataFrame
-        df = pd.DataFrame([data.model_dump()])
 
-        # Convert the categorical columns to the appropriate type
-        encoder = self._load_encoder(model_group)
-        encoded_data = encoder.transform(df[cat_cols])
+def initialize_redis_client(host, port):
+    """
+    Initializes and validates the connection to the Redis server.
+    Args:
+        host (str): Redis server host.
+        port (str): Redis server port.
+    Returns:
+        RedisClient: An instance of RedisClient.
+    Raises:
+        ConnectionError: If the Redis server is not reachable.
+    """
+    redis_client = RedisClient(host, port)
+    if redis_client.is_server_alive():
+        print("Redis server is alive.")
+    else:
+        raise ConnectionError("Redis server is not reachable.")
+    return redis_client
 
-        # Convert the encoded data to a DataFrame
-        df[cat_cols] = encoded_data
 
-        # Drop the original categorical columns
-        df.drop(columns=cat_cols, inplace=True)
+def initialize_redis_ai_client(host, port):
+    """
+    Initializes and validates the connection to the RedisAI server.
+    Args:
+        host (str): RedisAI server host.
+        port (str): RedisAI server port.
+    Returns:
+        RedisAIClient: An instance of RedisAIClient.
+    Raises:
+        ConnectionError: If the RedisAI server is not reachable.
+    """
+    redis_ai_client = RedisAIClient(host, port)
+    if redis_ai_client.is_server_alive():
+        print("RedisAI server is alive.")
+    else:
+        raise ConnectionError("RedisAI server is not reachable.")
+    return redis_ai_client
 
-        # Convert the DataFrame to a NumPy array
-        input_data = np.hstack([df[num_cols].values, encoded_data])
 
-        return input_data
+def main() -> InferenceAPI:
+    """
+    Main entry point for the application. Initializes dependencies and starts the API.
+    """
+    # Validate column configuration
+    categorical_columns, numerical_columns = validate_column_configuration()
 
-    def _setup_routes(self):
-        """
-        Setup the FastAPI routes.
-        """
+    # Validate model inference request
+    validate_model_request()
 
-        @sleep_and_retry
-        @limits(calls=20, period=1)  # 20 requests per second
-        @self.app.post("/predict/onnx")
-        @time_checker
-        async def predict_onnx(data: ModelInferenceRequest) -> dict:
-            """
-            Predict the price using the ONNX model in RedisAI.
-            Args:
-                data (ModelInferenceRequest): The input data for prediction.
-            Returns:
-                dict: The predicted price.
-            """
-            model_group = data.model_group
+    # Retrieve Redis and RedisAI configuration from environment variables
+    redis_host = os.getenv("REDIS_HOST")
+    redis_port = os.getenv("REDIS_PORT")
+    redis_ai_host = os.getenv("REDISAI_HOST")
+    redis_ai_port = os.getenv("REDISAI_PORT")
 
-            # Key for the model in Redis
-            key = f"model_{model_group}"
+    # Initialize Redis and RedisAI clients
+    redis_client = initialize_redis_client(redis_host, redis_port)
+    redis_ai_client = initialize_redis_ai_client(redis_ai_host, redis_ai_port)
 
-            input_data = self._get_input_data(
-                data, model_group, self.cat_cols, self.num_cols
-            )
-            input_data = input_data.astype(np.float32)
+    # Start the inference API
+    print("Starting API...")
+    inference_api = InferenceAPI(
+        redis_client=redis_client,
+        redis_ai_client=redis_ai_client,
+        categorical_columns=categorical_columns,
+        numerical_columns=numerical_columns,
+    )
+    return inference_api.app
 
-            # Set the input tensor in RedisAI
-            output = self.rai.tensor_set(key=key, input_data=input_data)
 
-            return {"predicted_price": float(output[0][0])}
-
-        @self.app.post("/predict/pickle")
-        @time_checker
-        async def predict_pickle(data: ModelInferenceRequest) -> dict:
-            """
-            Predict the price using the Pickle model.
-            Args:
-                data (ModelInferenceRequest): The input data for prediction.
-            Returns:
-                dict: The predicted price.
-            """
-            model_group = data.model_group
-
-            # Load the model from the file
-            with open(f"/ml/data/model_{model_group}.pkl", "rb") as f:
-                model = pickle.load(f)
-
-            input_data = self._get_input_data(
-                data, model_group, self.cat_cols, self.num_cols
-            )
-            input_data = input_data.astype(np.float32)
-
-            prediction = model.predict(input_data)
-
-            return {"predicted_price": float(prediction[0])}
+app = main()

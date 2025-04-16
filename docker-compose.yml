@@ -50,7 +50,7 @@ services:
       REDISAI_PORT: 6379
     volumes:
       - ./ml/data:/ml/data
-    command: uvicorn --reload --host 0.0.0.0 --port 5001 --log-level "debug" ml.inference.app:app
+    command: uvicorn --reload --host 0.0.0.0 --port 5001 --log-level "debug" ml.inference.main:app
     networks:
       -  app-net
 
