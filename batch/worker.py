@@ -28,8 +28,7 @@ class RabbitMQWorker:
         username: str,
         password: str,
         file_path: str,
-        ml_host: str,
-        ml_port: int,
+        ml_url: str,
     ):
         """
         Initialize the RabbitMQWorker with connection and processing details.
@@ -41,8 +40,7 @@ class RabbitMQWorker:
             username (str): Username for RabbitMQ authentication.
             password (str): Password for RabbitMQ authentication.
             file_path (str): Path to the directory where files are stored.
-            ml_host (str): Hostname or IP address of the ML service.
-            ml_port (int): Port of the ML service.
+            ml_url (str): URL of the machine learning service for processing files.
         """
         self.queue_name = queue_name
         self.host = host
@@ -54,8 +52,7 @@ class RabbitMQWorker:
         self.file_path = file_path
         self.connection = None
         self.channel = None
-        self.ml_host = ml_host
-        self.ml_port = ml_port
+        self.ml_url = ml_url
 
     def connect(self, max_retries: int = 2):
         """
@@ -98,7 +95,7 @@ class RabbitMQWorker:
                 return
 
             print(f"Processing file: {filename}")
-            processor = FileProcessor(self.file_path, self.ml_host, self.ml_port)
+            processor = FileProcessor(self.file_path, self.ml_url)
             processor.process_file(filename)
 
         except json.JSONDecodeError:

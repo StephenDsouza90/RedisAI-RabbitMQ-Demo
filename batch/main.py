@@ -13,12 +13,11 @@ def main():
     file_path = os.getenv("FILE_PATH")
 
     # ML env variables
-    ml_host = os.getenv("ML_HOST")
-    ml_port = os.getenv("ML_PORT")
+    ml_url = os.getenv("ML_URL")
 
     # Start the RabbitMQ worker
     worker = RabbitMQWorker(
-        queue_name, host, port, username, password, file_path, ml_host, ml_port
+        queue_name, host, port, username, password, file_path, ml_url
     )
     worker.connect()
     worker.start_consuming()

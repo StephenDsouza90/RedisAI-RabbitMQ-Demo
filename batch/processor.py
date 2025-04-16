@@ -17,18 +17,16 @@ class FileProcessor:
     The processing involves sending data to a machine learning service for predictions.
     """
 
-    def __init__(self, file_directory: str, ml_host: str, ml_port: int):
+    def __init__(self, file_directory: str, ml_url: str):
         """
         Initialize the FileProcessor with the file directory and ML service details.
 
         Args:
             file_directory (str): Directory where the files are located.
-            ml_host (str): Hostname or IP address of the machine learning service.
-            ml_port (int): Port number of the machine learning service.
+            ml_url (str): URL of the machine learning service for processing files.
         """
         self.file_directory = file_directory
-        self.ml_host = ml_host
-        self.ml_port = ml_port
+        self.ml_url = ml_url
 
     def process_file(self, file_name: str):
         """
@@ -53,12 +51,10 @@ class FileProcessor:
 
         start_time = time.time()
 
-        url = f"http://{self.ml_host}:{self.ml_port}/predict/onnx"
-
         # Process each row in the DataFrame
         for index, row in data_frame.iterrows():
             try:
-                response = requests.post(url, json=row.to_dict())
+                response = requests.post(self.ml_url, json=row.to_dict())
                 if response.status_code == 200:
                     prediction = response.json()
                     data_frame.at[index, "predicted_price"] = prediction.get("predicted_price", None)

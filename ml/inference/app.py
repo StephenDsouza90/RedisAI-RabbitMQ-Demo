@@ -173,3 +173,13 @@ class InferenceAPI:
             prediction = model.predict(input_data)
 
             return {"predicted_price": float(prediction[0])}
+
+        @self.app.get("/health")
+        def health_check():
+            """
+            Health check endpoint.
+
+            Returns:
+                dict: Health status.
+            """
+            return {"status": "healthy"}
