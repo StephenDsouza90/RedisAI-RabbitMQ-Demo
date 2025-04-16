@@ -2,38 +2,64 @@
 
 ## Overview
 
-A Microservice Pipeline for File Processing & ML Inference with **RabbitMQ** + **RedisAI**.
+Scalable ML Pipeline with **RabbitMQ** (message queueing) & **RedisAI** (model caching and inference)
 
-**AIMQ** demonstrates a scalable microservice architecture that processes files through an ML pipeline using:
+## Key Features
 
-- **RabbitMQ** for message queueing
-- **RedisAI** for model caching and inference
+- ✅ **Asynchronous Processing** - Decoupled microservices via RabbitMQ
+- ✅ **Low-Latency Inference** - RedisAI-accelerated model serving
+- ✅ **Benchmark Ready** - Compare ONNX vs Pickle performance
+- ✅ **Production-Grade** - Dockerized with health checks
 
-## Architecture & Key Features
+## Architecture Components
 
 ![design](assets/architecture/app-architecture.jpg)
 
-### 1. **Interface Service (Go + RabbitMQ)**
+### 1. **Interface Service**
 
-- Handles file uploads / downloads
-- Publishes messages to RabbitMQ
-- Stores files in persistent storage
+**Responsibilities**:
 
-### 2. **Batch Processor (Python + RabbitMQ)**
+- REST API for file uploads/downloads and predicts
+- Publishes messages to RabbitMQ exchange
+- Local filesystem storage
 
-- Subscribes to RabbitMQ queues
-- Processes files and prepares ML inference requests
-- Manages the workflow between Queue and AI service
+**Tech**: Go, Gin framework, RabbitMQ client
 
-### 3. **ML Service (Python + RedisAI)**
+### 2. **Batch Processor**
 
-- Provides ETL, model training, and inference endpoints
-- Caches models in RedisAI for low-latency predictions
+**Workflow**:
+
+- Consumes messages from queue
+- Transforms Excel → Pandas DataFrame
+- Calls ML Service via HTTP with payload
+- Saves predictions back to storage
+
+**Tech**: Python, Pandas, Pika (RabbitMQ client)
+
+### 3. **ML Service**
+
+**Core Functions**:
+
+- `/predict/onnx`: Uses RedisAI-cached models (fast)
+- `/predict/pickle`: Traditional disk-loaded models (slow)
+- Auto-caches models at startup
+- Rate-limited API endpoints
+
+**Tech**: Python, FastAPI, RedisAI, ONNX runtime, Scikit-learn
+
+## Benchmark Results
+
+**Multiple (1000) Request**
+
+| Endpoint        | Seconds |
+|-----------------|---------|
+| /predict/onnx   | 4.36    |
+| /predict/pickle	| 222.69  |
 
 ## Tech Stack
 
 - **Messaging**: RabbitMQ
-- **AI Caching**: RedisAI
+- **AI Caching**: Redis, RedisAI
 - **Languages**: Go (API), Python (ML/Batch)
 - **Storage**: (Local)
 - **Containerization**: Docker
@@ -51,21 +77,22 @@ A Microservice Pipeline for File Processing & ML Inference with **RabbitMQ** + *
 
 ### 1. **Interface Service**
 
-TODO
+The Interface Service serves as the system’s entry point, handling both batch and real-time prediction workflows. For batch processing, it accepts file uploads, stores them in persistent storage, and publishes structured messages to RabbitMQ containing file metadata. This decoupled approach ensures reliable processing even if downstream services are temporarily unavailable. For low-latency needs, it also provides a synchronous prediction endpoint that directly queries the ML Service, bypassing the queue. RabbitMQ was chosen for its message durability, support for backpressure handling, and ability to decouple producers from consumers—critical for maintaining system resilience during peak loads or service restarts.
 
 ### 2. **Batch Processor**
 
-TODO
+The Batch Processor subscribes to RabbitMQ, processing files asynchronously by converting them into structured DataFrames, enriching them with predictions from the ML Service, and saving the results. It implements robust error handling, including dead-letter queues for failed messages and automatic retries with exponential backoff. Performance optimizations include batch message prefetching and parallel processing for independent files. By isolating file parsing and data preparation in this service, the ML Service remains focused on inference, improving scalability.
+
 
 ### 3. **ML Service**
 
-TODO
+The ML Service handles both ETL and inference. During ETL, it preprocesses training data (e.g., encoding categorical features) and exports models to `ONNX` format, which is optimized for RedisAI’s tensor-based execution. Two inference endpoints showcase the performance impact of caching: the `/predict/onnx` endpoint leverages RedisAI’s in-memory models for predictions, while `/predict/pickle` serves as a baseline, loading models from disk with higher latency. RedisAI’s tensor operations enable efficient batch predictions, and models are preloaded at startup to eliminate cold starts. Rate limiting protects against overload, with dynamic adjustments based on system health.
 
 ## Quick Start with Docker Compose (Locally)
 
 1. **Clone the repository:**
 
-```git
+```
 git clone https://github.com/StephenDsouza90/RedisAI-RabbitMQ-Demo.git
 cd RedisAI-RabbitMQ-Demo
 ```
@@ -76,46 +103,27 @@ cd RedisAI-RabbitMQ-Demo
 # Install packages and dependencies
 pip install -r requirements.txt
 
-# Run script
+# Generate ML artifacts
 python ml/etl/main.py
 ```
 
 3. **Start all services:**
 
 ```docker
-# Start Services
+# Launch all services
 docker-compose up --build -d
 
-# Check services (6 must be running)
+# Verify services (Should show 6 containers)
 docker ps
 ```
 
-Output
-```
-CONTAINER ID   IMAGE                             COMMAND                  CREATED              STATUS                   PORTS                                                                                                         NAMES
-0b590a74d39f   redisai-rabbitmq-demo-interface   "./interface"            About a minute ago   Up About a minute        0.0.0.0:8080->8080/tcp                                                                                        redisai-rabbitmq-demo-interface-1
-42d1bfe0732a   redisai-rabbitmq-demo-ml          "uvicorn --reload --…"   About a minute ago   Up About a minute        0.0.0.0:5001->5001/tcp                                                                                        redisai-rabbitmq-demo-ml-1
-6d4ec0055b96   redisai-rabbitmq-demo-batch       "python -u batch/mai…"   About a minute ago   Up About a minute        0.0.0.0:5000->5000/tcp                                                                                        redisai-rabbitmq-demo-batch-1
-eb375fe54484   redis:6                           "docker-entrypoint.s…"   9 minutes ago        Up 9 minutes (healthy)   0.0.0.0:6379->6379/tcp                                                                                        redisai-rabbitmq-demo-redis-1
-901b902f0765   rabbitmq:3-management             "docker-entrypoint.s…"   9 minutes ago        Up 9 minutes (healthy)   4369/tcp, 5671/tcp, 0.0.0.0:5672->5672/tcp, 15671/tcp, 15691-15692/tcp, 25672/tcp, 0.0.0.0:15672->15672/tcp   redisai-rabbitmq-demo-rabbitmq-1
-b1a6a1459143   redislabs/redisai:latest          "docker-entrypoint.s…"   9 minutes ago        Up 9 minutes (healthy)   0.0.0.0:6380->6379/tcp                                                                                        redisai-rabbitmq-demo-redisai-1
-```
-
-4. **Use Interface Service:**
-
-Upload files (Test files are available)
+4. **Usage Examples - Interface Service:**
 
 ```
+# Upload file for batch processing
 curl -X POST http://localhost:8080/upload -F "file=@assets/sample_files/1_row.xlsx"
-```
 
-Output
-```
-{"message":"File uploaded and message sent"}
-```
-
-Prediction Requests
-```
+# Real-time prediction
 curl -X POST http://localhost:8080/predict \
 -H "Content-Type: application/json" \
 -d '{
@@ -134,47 +142,17 @@ curl -X POST http://localhost:8080/predict \
 }'
 ```
 
-Output
-```
-{"predicted_price":32424.388671875}
-```
+5. **Monitoring (If needed):**
 
-5. **Check RabbitMQ (If needed):**
+| Service     | URL                        |
+|-------------|----------------------------|
+| RabbitMQ UI | http://localhost:15672     |
+| ML API Docs | http://localhost:5001/docs |
 
-```
-http://localhost:15672
-```
-
-6. **Use ML Inference directly:**
+6. **Stop services:**
 
 ```
-# Use swagger UI
-http://localhost:5001/docs
-
-# Request Body
-{
-  "modelGroup": "A",
-  "model": "180",
-  "kilometers": 10789,
-  "fueltype": "Diesel",
-  "geartype": "Automatic",
-  "vehicletype": "Sedan Car",
-  "ageinmonths": 20,
-  "color": "Black",
-  "line": "Sportline",
-  "doors": "4 to 5",
-  "seats": "1 to 3",
-  "climate": "Air Conditioning"
-}
-```
-
-7. **Stop services:**
-
-```
-# ...
 docker-compose down
-
-# ...
 docker-compose down -v
 ```
 
