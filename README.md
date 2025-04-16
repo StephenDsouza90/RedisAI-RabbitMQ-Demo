@@ -13,7 +13,9 @@ Scalable ML Pipeline with **RabbitMQ** (message queueing) & **RedisAI** (model c
 
 ## Architecture Components
 
-![design](assets/architecture/app-architecture.jpg)
+<div align="center">
+  <img src="assets/architecture/app-architecture.jpg" alt="design">
+</div>
 
 ### 1. **Interface Service**
 
