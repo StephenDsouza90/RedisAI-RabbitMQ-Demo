@@ -157,7 +157,3 @@ curl -X POST http://localhost:8080/predict \
 docker-compose down
 docker-compose down -v
 ```
-
-## Quick Start with Kubernetes (Locally)
-
-## Testing
